@@ -24,6 +24,22 @@ function createTemplate(id: number) {
 			</td>
 			</tr>
 			<tr>
+			<td>
+				<label for="goalx_${id}">Goal x</label>
+			</td>
+			<td>
+				<input type="number" id="goalx_${id}">
+			</td>
+			</tr>
+			<tr>
+			<td>
+				<label for="goaly_${id}">Goal y</label>
+			</td>
+			<td>
+				<input type="number" id="goaly_${id}">
+			</td>
+			</tr>
+			<tr>
 				<td>
 					<label for="kappa_${id}">Kappa</label>
 				</td>
@@ -37,7 +53,7 @@ function createTemplate(id: number) {
 			</tr>
 			<tr>
 				<td><label for="obstacles_${id}">Obstacles</label></td>
-				<td><input type="text" id="obstacle_${id}"></td>
+				<td><input type="text" id="obstacles_${id}"></td>
 			</tr>
 			</table>
 			<button id="computePot_${id}">Compute Potential</button>
@@ -77,11 +93,58 @@ export class DisplayComponent {
 		(<HTMLElement>div.querySelector("#showObstacles_" + this.svgID)).addEventListener("click", () => { this.showObstacles() });
 		this.parent.appendChild(div);
 	}
+	getInputs(){
+		let start = this.getStart() || new Point(2, 10);
+		let goal = this.getGoal() || new Point(18, 10);
+		let boundary = this.getBoundary() || new Circle(10, 10, 10);
+		let obstacles = this.getObstacles() || [new Circle(10, 15, 2), new Circle(10, 5, 2)];
+		let kappa = this.getKappa() || 3;
+		console.log("Inputs are:", {start, goal, boundary, obstacles,kappa});
+		return {start, goal, boundary, obstacles, kappa};
+	}
+	getStart(): Point{
+		let x = parseFloat((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#startx_" + this.svgID)).value);
+		let y = parseFloat((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#starty_" + this.svgID)).value);
+		if(!x || !y){
+			return;
+		}
+		return new Point(x, y);
+	}
+	getGoal(): Point {
+		let x = parseFloat((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#goalx_" + this.svgID)).value);
+		let y = parseFloat((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#goaly_" + this.svgID)).value);
+		if(!x || !y){
+			return;
+		}
+		return new Point(x, y);
+	}
+	getBoundary(): Circle {
+		let str = (<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#boundary_" + this.svgID)).value;
+		try {
+			let arr = eval(str);
+			return new Circle(arr[0][0], arr[0][1], arr[1]);
+		} catch {
+
+		}
+	}
+	getObstacles(): Circle[] {
+		let str = (<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#obstacles_" + this.svgID)).value;
+		try {
+			let arr = eval(str);
+			let obs: Circle[] = [];
+			for(let i = 0; i < arr.length; i++){
+				obs.push(new Circle(arr[i][0][0], arr[i][0][1], arr[i][1]));
+			}
+			return obs;
+		} catch {
+
+		}
+	}
+	getKappa(): number{
+		return parseFloat((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#kappa_" + this.svgID)).value);
+	}
 	calculatePot(): void {
-		const goal = new Point(18, 10);
-		const boundary = new Circle(10, 10, 10);
-		const obstacles = [new Circle(10, 15, 2), new Circle(10, 5, 2)];
-		const kappa = parseInt((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#kappa_" + this.svgID)).value);
+		let {start, goal, boundary, obstacles,kappa} = this.getInputs();
 		Environment.getInstance().set(goal, boundary, obstacles, kappa);
 		this.obstacles = obstacles;
 		calculatePotential([0, 20], [0, 20], 1).then(vals => {
@@ -90,14 +153,9 @@ export class DisplayComponent {
 		})
 	}
 	calculatePath() {
-		const goal = new Point(18, 10);
-		const boundary = new Circle(10, 10, 10);
-		const obstacles = [new Circle(10, 15, 2), new Circle(10, 5, 2)];
-		const kappa = parseInt((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#kappa_" + this.svgID)).value);
+		let {start, goal, boundary, obstacles,kappa} = this.getInputs();
 		Environment.getInstance().set(goal, boundary, obstacles, kappa);
-		let x = parseFloat((<HTMLInputElement>document.getElementById("startx_" + this.svgID)).value);
-		let y = parseFloat((<HTMLInputElement>document.getElementById("starty_" + this.svgID)).value);
-		let path = gradientDescent(new Point(x, y), goal, boundary, 10, 0.0001);
+		let path = gradientDescent(start, goal, boundary, 10, 0.0001);
 		console.log(path);
 	}
 	showObstacles() {
