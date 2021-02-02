@@ -94,8 +94,8 @@ export class DisplayComponent {
 		this.parent.appendChild(div);
 	}
 	getInputs(){
-		let start = this.getStart() || new Point(2, 10);
-		let goal = this.getGoal() || new Point(18, 10);
+		let start = this.getStart() || new Point(1, 10);
+		let goal = this.getGoal() || new Point(19, 10);
 		let boundary = this.getBoundary() || new Circle(10, 10, 10);
 		let obstacles = this.getObstacles() || [new Circle(10, 15, 2), new Circle(10, 5, 2)];
 		let kappa = this.getKappa() || 3;
