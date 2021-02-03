@@ -6,3 +6,5 @@ export class Point {
 		this.y = y;
 	}
 }
+
+(<any>window).Point = Point;

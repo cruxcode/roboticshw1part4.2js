@@ -55,6 +55,14 @@ function createTemplate(id: number) {
 				<td><label for="obstacles_${id}">Obstacles</label></td>
 				<td><input type="text" id="obstacles_${id}"></td>
 			</tr>
+			<tr>
+				<td><label for="alpha_${id}">alpha</label></td>
+				<td><input type="text" id="alpha_${id}"></td>
+			</tr>
+			<tr>
+				<td><label for="epsilon_${id}">epsilon</label></td>
+				<td><input type="text" id="epsilon_${id}"></td>
+			</tr>
 			</table>
 			<button id="computePot_${id}">Compute Potential</button>
 			<button id="computePath_${id}">Find Path</button>
@@ -69,6 +77,7 @@ export class DisplayComponent {
 	divID: number;
 	static activeID: number[] = [0];
 	data: { point: Point, pot: number }[];
+	shapes: any[] = [];
 	obstacles: Circle[] = [];
 	private static getID() {
 		let max = Math.max(...DisplayComponent.activeID);
@@ -93,19 +102,21 @@ export class DisplayComponent {
 		(<HTMLElement>div.querySelector("#showObstacles_" + this.svgID)).addEventListener("click", () => { this.showObstacles() });
 		this.parent.appendChild(div);
 	}
-	getInputs(){
+	getInputs() {
 		let start = this.getStart() || new Point(1, 10);
 		let goal = this.getGoal() || new Point(19, 10);
 		let boundary = this.getBoundary() || new Circle(10, 10, 10);
 		let obstacles = this.getObstacles() || [new Circle(10, 15, 2), new Circle(10, 5, 2)];
 		let kappa = this.getKappa() || 3;
-		console.log("Inputs are:", {start, goal, boundary, obstacles,kappa});
-		return {start, goal, boundary, obstacles, kappa};
+		let alpha = this.getAlpha() || 1;
+		let epsilon = this.getEpsilon() || 0.00001;
+		console.log("Inputs are:", { start, goal, boundary, obstacles, kappa });
+		return { start, goal, boundary, obstacles, kappa, alpha, epsilon };
 	}
-	getStart(): Point{
+	getStart(): Point {
 		let x = parseFloat((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#startx_" + this.svgID)).value);
 		let y = parseFloat((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#starty_" + this.svgID)).value);
-		if(!x || !y){
+		if (!x || !y) {
 			return;
 		}
 		return new Point(x, y);
@@ -113,7 +124,7 @@ export class DisplayComponent {
 	getGoal(): Point {
 		let x = parseFloat((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#goalx_" + this.svgID)).value);
 		let y = parseFloat((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#goaly_" + this.svgID)).value);
-		if(!x || !y){
+		if (!x || !y) {
 			return;
 		}
 		return new Point(x, y);
@@ -132,7 +143,7 @@ export class DisplayComponent {
 		try {
 			let arr = eval(str);
 			let obs: Circle[] = [];
-			for(let i = 0; i < arr.length; i++){
+			for (let i = 0; i < arr.length; i++) {
 				obs.push(new Circle(arr[i][0][0], arr[i][0][1], arr[i][1]));
 			}
 			return obs;
@@ -140,23 +151,61 @@ export class DisplayComponent {
 
 		}
 	}
-	getKappa(): number{
+	getKappa(): number {
 		return parseFloat((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#kappa_" + this.svgID)).value);
 	}
+	getAlpha(): number {
+		return parseFloat((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#alpha_" + this.svgID)).value);
+	}
+	getEpsilon(): number {
+		return parseFloat((<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#epsilon_" + this.svgID)).value);
+	}
 	calculatePot(): void {
-		let {start, goal, boundary, obstacles,kappa} = this.getInputs();
+		console.log("started!!!")
+		let { goal, boundary, obstacles, kappa } = this.getInputs();
 		Environment.getInstance().set(goal, boundary, obstacles, kappa);
 		this.obstacles = obstacles;
 		calculatePotential([0, 20], [0, 20], 1).then(vals => {
 			this.data = vals;
-			contourChart("contour_chart_container_" + this.svgID, [convertData(vals)], []);
+			this.drawChart();
 		})
 	}
 	calculatePath() {
-		let {start, goal, boundary, obstacles,kappa} = this.getInputs();
+		let { start, goal, boundary, obstacles, kappa, alpha, epsilon } = this.getInputs();
 		Environment.getInstance().set(goal, boundary, obstacles, kappa);
-		let path = gradientDescent(start, goal, boundary, 10, 0.0001);
+		let path = gradientDescent(start, goal, boundary, alpha, epsilon, this.gradientCallback.bind(this));
 		console.log(path);
+	}
+	gradientCallback(q: Point[], dudx: number, dudy: number, count: number, terminated: boolean): boolean {
+		if (q.length >= 2) {
+			this.shapes.push({
+				type: 'line',
+				x0: q[q.length - 1].x,
+				y0: q[q.length - 1].y,
+				x1: q[q.length - 2].x,
+				y1: q[q.length - 2].y,
+				line: {
+					color: 'rgb(255,215,0)',
+					width: 2
+				}
+			});
+		}
+		if(terminated){
+			this.drawChart();
+			console.log(`iter ${count} qx=${q[q.length - 1].x} qy=${q[q.length - 1].y}
+				dudx=${dudx} dudy=${dudy}
+			`);
+		}
+		if (count % 20 == 0) {
+			this.drawChart();
+			console.log(`iter ${count} qx=${q[q.length - 1].x} qy=${q[q.length - 1].y}
+				dudx=${dudx} dudy=${dudy}
+			`);
+		}
+		if(count == 1000){
+			return false;
+		}
+		return true;
 	}
 	showObstacles() {
 		if (this.data) {
@@ -177,7 +226,11 @@ export class DisplayComponent {
 					}
 				});
 			}
-			contourChart("contour_chart_container_" + this.svgID, [convertData(this.data)], shapes);
+			this.shapes.push(...shapes);
+			this.drawChart();
 		}
+	}
+	drawChart() {
+		contourChart("contour_chart_container_" + this.svgID, [convertData(this.data)], this.shapes);
 	}
 }

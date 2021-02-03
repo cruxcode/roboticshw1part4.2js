@@ -46,6 +46,9 @@ export function calculateGradientY(point: Point): { point: Point, dudy: number }
 	}
 }
 
+(<any>window).calculateGradientX = calculateGradientX;
+(<any>window).calculateGradientY = calculateGradientY;
+
 function pointsEqual(p1: Point, p2: Point): boolean{
 	if(p1.x == p2.x && p1.y == p2.y){
 		return true;
@@ -53,33 +56,44 @@ function pointsEqual(p1: Point, p2: Point): boolean{
 	return false;
 }
 
-export function gradientDescent(start: Point, goal: Point, boundary: Circle, alpha: number, epsilon: number): Point[]{
+function adaptAlpha(alpha: number, dudx: number, dudy: number): number{
+	if(calcDist(new Point(dudx, dudy), new Point(0, 0)) >= 0.001){
+		return alpha;
+	}
+	if((calcDist(new Point(dudx, dudy), new Point(0, 0)) < 0.000001)){
+		return alpha*10000;
+	}
+	if((calcDist(new Point(dudx, dudy), new Point(0, 0)) < 0.00001)){
+		return alpha*1000;
+	}
+	if((calcDist(new Point(dudx, dudy), new Point(0, 0)) < 0.0001)){
+		return alpha*100;
+	}
+	if((calcDist(new Point(dudx, dudy), new Point(0, 0)) < 0.001)){
+		return alpha*10;
+	}
+}
+
+export function gradientDescent(start: Point, goal: Point, boundary: Circle, alpha: number, epsilon: number, cb?: (q: Point[], dudx: number, dudy: number, count: number, terminated: boolean) => boolean): Point[]{
 	let q: Point[] = [start];
 	let dudx: number = calculateGradientX(q[0]).dudx;
 	let dudy: number = calculateGradientY(q[0]).dudy;
 	let count = 0;
-	const max_iter = 1000;
-	while ((calcDist(new Point(dudx, dudy), new Point(0, 0)) > epsilon) && count < max_iter) {
-		let x = q[q.length - 1].x - alpha*dudx;
-		let y = q[q.length - 1].y - alpha*dudy;
+	console.log("gradient4!!!");
+	while ((calcDist(new Point(dudx, dudy), new Point(0, 0)) > epsilon)) {
+		let alpha_star = adaptAlpha(alpha, dudx, dudy);
+		let x = q[q.length - 1].x - alpha_star*dudx;
+		let y = q[q.length - 1].y - alpha_star*dudy;
 		let new_point = new Point(x, y);
 		q.push(new_point);
-		// if(calculateGradientX(q[q.length - 1]) == undefined && !pointsEqual(q[q.length - 1], goal)){
-		// 	dudx = (q[q.length - 1].x - goal.x)/(2*boundary.r);
-		// } else {
-			dudx = calculateGradientX(q[q.length - 1]).dudx;
-		// }
-		// if(calculateGradientY(q[q.length - 1]) == undefined && !pointsEqual(q[q.length - 1], goal)){
-		// 	dudy = (q[q.length - 1].y - goal.y)/(2*boundary.r);
-		// } else {
-			dudy = calculateGradientY(q[q.length - 1]).dudy;
-		// }
-
-		if(count%20 == 0){
-			console.log("% done", count*100/max_iter);
+		if(cb && !cb(q, dudx, dudy, count, false)){
+			return q;
 		}
+		dudx = calculateGradientX(q[q.length - 1]).dudx;
+		dudy = calculateGradientY(q[q.length - 1]).dudy;
 		++count;
 	}
+	cb(q, dudx, dudy, count, true);
 	return q;
 }
 
