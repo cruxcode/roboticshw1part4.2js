@@ -57,21 +57,21 @@ function pointsEqual(p1: Point, p2: Point): boolean{
 }
 
 function adaptAlpha(alpha: number, dudx: number, dudy: number): number{
-	if(calcDist(new Point(dudx, dudy), new Point(0, 0)) >= 0.001){
+	if(calcDist(new Point(dudx, dudy), new Point(0, 0)) >= 0.0001){
 		return alpha;
 	}
 	if((calcDist(new Point(dudx, dudy), new Point(0, 0)) < 0.000001)){
-		return alpha*10000;
-	}
-	if((calcDist(new Point(dudx, dudy), new Point(0, 0)) < 0.00001)){
 		return alpha*1000;
 	}
-	if((calcDist(new Point(dudx, dudy), new Point(0, 0)) < 0.0001)){
+	if((calcDist(new Point(dudx, dudy), new Point(0, 0)) < 0.00001)){
 		return alpha*100;
 	}
-	if((calcDist(new Point(dudx, dudy), new Point(0, 0)) < 0.001)){
+	if((calcDist(new Point(dudx, dudy), new Point(0, 0)) < 0.0001)){
 		return alpha*10;
 	}
+	// if((calcDist(new Point(dudx, dudy), new Point(0, 0)) < 0.001)){
+	// 	return alpha*10;
+	// }
 }
 
 export function gradientDescent(start: Point, goal: Point, boundary: Circle, alpha: number, epsilon: number, cb?: (q: Point[], dudx: number, dudy: number, count: number, terminated: boolean) => boolean): Point[]{
@@ -79,7 +79,7 @@ export function gradientDescent(start: Point, goal: Point, boundary: Circle, alp
 	let dudx: number = calculateGradientX(q[0]).dudx;
 	let dudy: number = calculateGradientY(q[0]).dudy;
 	let count = 0;
-	console.log("gradient4!!!");
+	console.log("gradient5!!!");
 	while ((calcDist(new Point(dudx, dudy), new Point(0, 0)) > epsilon)) {
 		let alpha_star = adaptAlpha(alpha, dudx, dudy);
 		let x = q[q.length - 1].x - alpha_star*dudx;
