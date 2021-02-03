@@ -57,6 +57,9 @@ function pointsEqual(p1: Point, p2: Point): boolean{
 }
 
 function adaptAlpha(alpha: number, dudx: number, dudy: number): number{
+	if(calcDist(new Point(dudx, dudy), new Point(0, 0)) >= 0.01){
+		return alpha/10;
+	}
 	if(calcDist(new Point(dudx, dudy), new Point(0, 0)) >= 0.0001){
 		return alpha;
 	}
