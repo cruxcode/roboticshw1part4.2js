@@ -77,27 +77,29 @@ function adaptAlpha(alpha: number, dudx: number, dudy: number): number{
 	// }
 }
 
-export function gradientDescent(start: Point, goal: Point, boundary: Circle, alpha: number, epsilon: number, cb?: (q: Point[], dudx: number, dudy: number, count: number, terminated: boolean) => boolean): Point[]{
-	let q: Point[] = [start];
-	let dudx: number = calculateGradientX(q[0]).dudx;
-	let dudy: number = calculateGradientY(q[0]).dudy;
-	let count = 0;
-	console.log("gradient5!!!");
-	while ((calcDist(new Point(dudx, dudy), new Point(0, 0)) > epsilon)) {
-		let alpha_star = adaptAlpha(alpha, dudx, dudy);
-		let x = q[q.length - 1].x - alpha_star*dudx;
-		let y = q[q.length - 1].y - alpha_star*dudy;
-		let new_point = new Point(x, y);
-		q.push(new_point);
-		if(cb && !cb(q, dudx, dudy, count, false)){
-			return q;
+export function gradientDescent(start: Point, goal: Point, boundary: Circle, alpha: number, epsilon: number, cb?: (q: Point[], dudx: number, dudy: number, count: number, terminated: boolean) => boolean): Promise<Point[]>{
+	return new Promise<Point[]>((res, req)=>{
+		let q: Point[] = [start];
+		let dudx: number = calculateGradientX(q[0]).dudx;
+		let dudy: number = calculateGradientY(q[0]).dudy;
+		let count = 0;
+		console.log("gradient5!!!");
+		while ((calcDist(new Point(dudx, dudy), new Point(0, 0)) > epsilon)) {
+			let alpha_star = adaptAlpha(alpha, dudx, dudy);
+			let x = q[q.length - 1].x - alpha_star*dudx;
+			let y = q[q.length - 1].y - alpha_star*dudy;
+			let new_point = new Point(x, y);
+			q.push(new_point);
+			if(cb && !cb(q, dudx, dudy, count, false)){
+				return q;
+			}
+			dudx = calculateGradientX(q[q.length - 1]).dudx;
+			dudy = calculateGradientY(q[q.length - 1]).dudy;
+			++count;
 		}
-		dudx = calculateGradientX(q[q.length - 1]).dudx;
-		dudy = calculateGradientY(q[q.length - 1]).dudy;
-		++count;
-	}
-	cb(q, dudx, dudy, count, true);
-	return q;
+		cb(q, dudx, dudy, count, true);
+		res(q);
+	});
 }
 
 export function convertData(vals: { point: Point, pot: number }[]): { x: number[], y: number[], z: number[], type: string } {

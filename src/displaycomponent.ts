@@ -165,7 +165,7 @@ export class DisplayComponent {
 		let { goal, boundary, obstacles, kappa } = this.getInputs();
 		Environment.getInstance().set(goal, boundary, obstacles, kappa);
 		this.obstacles = obstacles;
-		calculatePotential([0, 20], [0, 20], 1).then(vals => {
+		calculatePotential([0, 20], [0, 20], 0.5).then(vals => {
 			this.data = vals;
 			this.drawChart();
 		})
@@ -173,8 +173,10 @@ export class DisplayComponent {
 	calculatePath() {
 		let { start, goal, boundary, obstacles, kappa, alpha, epsilon } = this.getInputs();
 		Environment.getInstance().set(goal, boundary, obstacles, kappa);
-		let path = gradientDescent(start, goal, boundary, alpha, epsilon, this.gradientCallback.bind(this));
-		console.log(path);
+		gradientDescent(start, goal, boundary, alpha, epsilon, this.gradientCallback.bind(this))
+		.then(path=>{
+			console.log(path);
+		});
 	}
 	gradientCallback(q: Point[], dudx: number, dudy: number, count: number, terminated: boolean): boolean {
 		if (q.length >= 2) {
@@ -202,7 +204,7 @@ export class DisplayComponent {
 				dudx=${dudx} dudy=${dudy}
 			`);
 		}
-		if(count == 1000){
+		if(count == 100000){
 			return false;
 		}
 		return true;
