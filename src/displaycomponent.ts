@@ -141,6 +141,7 @@ export class DisplayComponent {
 	getObstacles(): Circle[] {
 		let str = (<HTMLInputElement>document.getElementById("container_" + this.divID).querySelector("#obstacles_" + this.svgID)).value;
 		try {
+			str.replace(/\(/g, "[").replace(/\)/g, "]");
 			let arr = eval(str);
 			let obs: Circle[] = [];
 			for (let i = 0; i < arr.length; i++) {
